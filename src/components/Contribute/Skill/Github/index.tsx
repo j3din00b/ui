@@ -2,7 +2,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import '../skills.css';
-import { getGitHubUsername } from '../../../../utils/github';
+import { getGitHubUserInfo } from '../../../../utils/github';
 import { useSession } from 'next-auth/react';
 import FilePathInformation from '../FilePathInformation/FilePathInformation';
 import AttributionInformation from '../AttributionInformation/AttributionInformation';
@@ -122,14 +122,7 @@ export const SkillFormGithub: React.FunctionComponent<SkillFormProps> = ({ skill
   }, []);
 
   useEffect(() => {
-    if (session?.user?.name && session?.user?.email) {
-      setName(session?.user?.name);
-      setEmail(session?.user?.email);
-    }
-  }, [session?.user]);
-
-  useEffect(() => {
-    const fetchUsername = async () => {
+    const fetchUserInfo = async () => {
       if (session?.accessToken) {
         try {
           const headers = {
@@ -139,15 +132,17 @@ export const SkillFormGithub: React.FunctionComponent<SkillFormProps> = ({ skill
             'X-GitHub-Api-Version': '2022-11-28'
           };
 
-          const fetchedUsername = await getGitHubUsername(headers);
-          setGithubUsername(fetchedUsername);
+          const fetchedUserInfo = await getGitHubUserInfo(headers);
+          setGithubUsername(fetchedUserInfo.login);
+          setName(fetchedUserInfo.name);
+          setEmail(fetchedUserInfo.email);
         } catch (error) {
-          console.error('Failed to fetch GitHub username:', error);
+          console.error('Failed to fetch GitHub user info:', error);
         }
       }
     };
 
-    fetchUsername();
+    fetchUserInfo();
   }, [session?.accessToken]);
 
   useEffect(() => {
@@ -331,7 +326,6 @@ export const SkillFormGithub: React.FunctionComponent<SkillFormProps> = ({ skill
   };
 
   const onYamlUploadSkillsFillForm = (data: SkillYamlData): void => {
-    setName(data.created_by ?? '');
     setDocumentOutline(data.task_description ?? '');
     setSeedExamples(yamlSeedExampleToFormSeedExample(data.seed_examples));
   };
@@ -430,7 +424,7 @@ export const SkillFormGithub: React.FunctionComponent<SkillFormProps> = ({ skill
     {
       id: 'review-submission',
       name: 'Review Submission',
-      component: <ReviewSubmission skillFormData={skillFormData} />,
+      component: <ReviewSubmission skillFormData={skillFormData} isGithubMode={false} />,
       footer: {
         isNextDisabled: true
       }
@@ -474,6 +468,7 @@ export const SkillFormGithub: React.FunctionComponent<SkillFormProps> = ({ skill
           setIsModalOpen={setIsModalOpen}
           isKnowledgeForm={false}
           onYamlUploadSkillsFillForm={onYamlUploadSkillsFillForm}
+          setActionGroupAlertContent={setActionGroupAlertContent}
         />
 
         <Wizard startIndex={activeStepIndex} onClose={handleCancel} height={600}>
@@ -530,8 +525,8 @@ export const SkillFormGithub: React.FunctionComponent<SkillFormProps> = ({ skill
               resetForm={resetForm}
             />
           )}
-          <DownloadDropdown skillFormData={skillFormData} githubUsername={githubUsername} />
-          <ViewDropdown skillFormData={skillFormData} githubUsername={githubUsername} />
+          <DownloadDropdown skillFormData={skillFormData} githubUsername={githubUsername} isGithubMode={true} />
+          <ViewDropdown skillFormData={skillFormData} githubUsername={githubUsername} isGithubMode={true} />
           <Button variant="link" type="button" onClick={handleCancel}>
             Cancel
           </Button>
